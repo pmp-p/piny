@@ -1,0 +1,37 @@
+#!/bin/bash
+SDKROOT=$(realpath $(dirname $0)/../..)
+. $SDKROOT/config
+
+ROOT=$(pwd)
+mkdir -p $ROOT/bin $ROOT/state
+
+#echo WASI_VERSION=$WASI_VERSION
+
+export WASI_SDK_PATH=$ROOT/$WASI_VERSION
+
+if [ -d $WASI_SDK_PATH ]
+then
+    echo -n
+else
+    echo downloading wasi-sdk
+    wget -c $WASI_URL
+    tar xvfz ${WASI_VERSION}*-linux.tar.gz
+fi
+
+#echo WASI_SDK_PATH=$WASI_SDK_PATH
+
+export CC="${WASI_SDK_PATH}/bin/clang --sysroot=${WASI_SDK_PATH}/share/wasi-sysroot"
+
+export CC="$CC -Wno-unused-command-line-argument -D_WASI_EMULATED_MMAN -D_WASI_EMULATED_SIGNAL"
+
+
+
+if echo "$@" | grep -q ' -l'
+then
+    echo "$CC -v $@ -lwasi-emulated-mman -lwasi-emulated-signal"
+    cmd="$CC -v $@ -lwasi-emulated-mman -lwasi-emulated-signal"
+else
+    cmd="$CC $@"
+fi
+echo $cmd >> $CC_REPLAY
+$cmd
