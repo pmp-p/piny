@@ -36,7 +36,7 @@ function summary () {
 if echo $0|grep -q piny.sh$
 then
     echo installing ...
-    mkdir -p $ROOT/bin $ROOT/state $ROOT/cache $ROOT/pkg $ROOT/out
+    mkdir -p $ROOT/bin $ROOT/state $ROOT/cache $ROOT/pkg $BINOUT
 
     # cannot ln on cross dev
     cp -rf $SDKROOT/* ./
@@ -100,12 +100,11 @@ else
     # useless ?
     NIM_OPTS="-d:NIM_INTBITS=32"
 
-    EXE=$ROOT/out/exe
 
     export NIMBLE_DIR=$ROOT/pkg
 
 
-    NIM_OPTS="--path:$NIMBLE_DIR --outdir:$ROOT/out -o:$EXE --nimcache:$ROOT/cache/$FLAVOUR"
+    NIM_OPTS="--path:$NIMBLE_DIR --path:$ROOT/include --nimcache:$ROOT/cache/$FLAVOUR"
     NIM_OPTS="$NIM_OPTS --cc:clang --os:linux"
 
     # gc arc / orc / none ?
@@ -123,7 +122,7 @@ else
 
     export PATH=$NIMROOT/bin:/bin:/usr/bin:/usr/local/bin
 
-
+    # ./nimble --verbose --debug install https://github.com/beef331/wasm3
     for pkg in pylib
     do
         if find $NIMBLE_DIR/pkgs/ -maxdepth 1 -type d |grep -q /${pkg}-
@@ -139,7 +138,7 @@ else
 
         if python3 -m black -l 132 $@ && PYTHONPATH=/data/git/pygbag python3 -m pygbag --piny $@
         then
-            FILENIM=$(basename $@ .py).pn
+            FILENIM=$(dirname $@)/$(basename $@ .py).pn
         else
             echo "bad file"
             exit 1
@@ -147,6 +146,10 @@ else
     else
         FILENIM=$@
     fi
+
+    BINOUT=$ROOT/out
+    EXE=$BINOUT/app
+
 
     if ${NIM_NOMAIN:-true}
     then
@@ -175,19 +178,19 @@ else
              -d:emscripten -d:wasi \
              -d:def_WASM_cpp -d:def_32_cpp  \
              --passC:"-m32 -I$ROOT/bin/wasi" --passL:-m32 \
+             --outdir:$BINOUT -o:$EXE \
              --path:$NIMBLE_DIR $FILENIM
 
 
             if [ -f $EXE ]
             then
                 echo "
-        Running program $exe via wasm3
-
+        moving program $EXE to out.wasm and running via wasm3
     _______________________________________________________________
 
             "
-                ./wasm3 $EXE
                 mv $EXE out.wasm
+                wasm3 out.wasm
             else
                 echo Build error
             fi
@@ -198,18 +201,23 @@ else
             # switch clang
             export PATH=${ROOT}/bin/emsdk:$PATH
             export EMSDK_QUIET=1
-#            EXE=$EXE.wasm
             summary "wasm via emscripten"
             nim c \
              $NIM_OPTS \
              --cpu:wasm32 -d:emscripten \
              -d:def_WASM_cpp -d:def_32_cpp  \
              --passC:-m32 --passL:-m32 \
+            --outdir:$BINOUT -o:$EXE \
              --path:$NIMBLE_DIR $FILENIM
 
-            . /opt/python-wasm-sdk/wasm32-mvp-emscripten-shell.sh
-            NODE=$(find $EMSDK|grep /bin/node$)
-            $NODE $EXE
+            if [ -f $EXE ]
+            then
+                . /opt/python-wasm-sdk/wasm32-mvp-emscripten-shell.sh
+                NODE=$(find $EMSDK|grep /bin/node$)
+                $NODE $BINOUT/$EXE
+            else
+                echo build error
+            fi
         ;;
 
         *)
@@ -222,7 +230,9 @@ else
                 ARCH=""
             fi
             echo "_____________________________________________________"
-            nim r $NIM_OPTS $ARCH -d:def_NODYNLIB_cpp -d:def_${BITS}_cpp $FILENIM
+            nim r $NIM_OPTS $ARCH \
+             --outdir:$BINOUT -o:$EXE \
+             -d:def_NODYNLIB_cpp -d:def_${BITS}_cpp $FILENIM
 
         ;;
     esac
