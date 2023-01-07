@@ -1,0 +1,6 @@
+#!/bin/bash
+
+export PYBUILD=3.11
+. /opt/python-wasm-sdk/wasm32-mvp-emscripten-shell.sh
+PATH=/opt/python-wasm-sdk/emsdk/upstream/emscripten:$PATH emcc $@
+

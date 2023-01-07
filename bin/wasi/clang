@@ -22,14 +22,51 @@ fi
 
 export CC="${WASI_SDK_PATH}/bin/clang --sysroot=${WASI_SDK_PATH}/share/wasi-sysroot"
 
-export CC="$CC -Wno-unused-command-line-argument -D_WASI_EMULATED_MMAN -D_WASI_EMULATED_SIGNAL"
+# -Wl,--no-entry -mexec-model=reactor
+# https://github.com/WebAssembly/wasi-sdk/issues/110
+# https://github.com/WebAssembly/WASI/issues/13
 
+
+CC="$CC -O0 -g3 -Wno-unused-command-line-argument"
+
+# wasm exports
+CC="$CC -Wl,--export-all"
+# web model compat ( wasm ctor not in _start/main but _initilalize instead )
+if ${NIM_NOMAIN:-false}
+then
+    echo "
+
+        ******* adding reactor support *********
+
+"
+#    CC="$CC -Wl,--no-entry -mexec-model=reactor"
+fi
+
+# compat layer from wasi-sdk
+export CC="$CC -D_WASI_EMULATED_MMAN -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_PROCESS_CLOCKS"
+
+
+for arg do
+    shift
+
+    arg_is_bad=false
+
+    for badarg in "-ldl" "-Wl,--eh-frame-hdr" "-Wl,-znoexecstack" "-Wl,-znow" "-Wl,-zrelro" "-Wl,-zrelro,-znow"
+    do
+        if [ "$arg" = "$badarg" ]
+        then
+            arg_is_bad=true
+            break
+        fi
+    done
+
+    set -- "$@" "$arg"
+done
 
 
 if echo "$@" | grep -q ' -l'
 then
-    echo "$CC -v $@ -lwasi-emulated-mman -lwasi-emulated-signal"
-    cmd="$CC -v $@ -lwasi-emulated-mman -lwasi-emulated-signal"
+    cmd="$CC -v $@ -lwasi-emulated-mman -lwasi-emulated-signal -lwasi-emulated-process-clocks"
 else
     cmd="$CC $@"
 fi
