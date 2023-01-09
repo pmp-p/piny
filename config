@@ -1,10 +1,14 @@
 WASI_VERSION=wasi-sdk-17.0
 WASI_URL=https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-17/wasi-sdk-17.0-linux.tar.gz
-NIM_VERSION=nim-1.6.10
 
-# wasi need 32
-NIM_URL=https://nim-lang.org/download/${NIM_VERSION}-linux_x32.tar.xz
-NIM_URL=https://nim-lang.org/download/${NIM_VERSION}-linux_x64.tar.xz
+
+
+#NIM_VERSION=nim-1.6.10
+#NIM_URL=https://nim-lang.org/download/${NIM_VERSION}-linux_x64.tar.xz
+
+NIM_VERSION=Nim
+NIM_URL=git
+
 
 CC_REPLAY=${CC_REPLAY:-$(pwd)/state/cc.replay}
 

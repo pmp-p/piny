@@ -57,17 +57,29 @@ then
         fi
     done
 
-    if [ -d $NIM_VERSION ]
+    if echo $NIM_URL|grep -q ^git$
     then
-        echo -n
+        if [ -d Nim/bin ]
+        then
+            echo using local devel version
+        else
+            echo building Nim devel
+            ./get_dev.sh && rm ./get_dev.sh
+        fi
     else
-        wget -c $NIM_URL
-        tar xf ${NIM_VERSION}-linux_*.tar.xz
+        if [ -d $NIM_VERSION ]
+        then
+            echo -n
+        else
+            wget -c $NIM_URL
+            tar xf ${NIM_VERSION}-linux_*.tar.xz
+        fi
     fi
 
     cat > nimble << END
 #!/bin/bash
-PATH=$ROOT/$NIM_VERSION/bin:$PATH nimble \$@
+export NIMBLE_DIR=$ROOT/pkg
+PATH=$ROOT/$NIM_VERSION/bin:$PATH nimble --nimbleDir:$ROOT/pkg \$@
 END
     chmod +x nimble
     [ -d $ROOT/$WASI_VERSION ] || $SDKROOT/bin/wasi/clang -v
@@ -147,9 +159,10 @@ else
         FILENIM=$@
     fi
 
-    BINOUT=$ROOT/out
-    EXE=$BINOUT/app
+    BINOUT=$ROOT
+    EXE=out/app
 
+    [ -f $BINOUT/$EXE ] && rm $BINOUT/$EXE
 
     if ${NIM_NOMAIN:-true}
     then
@@ -178,8 +191,7 @@ else
              -d:emscripten -d:wasi \
              -d:def_WASM_cpp -d:def_32_cpp  \
              --passC:"-m32 -I$ROOT/bin/wasi" --passL:-m32 \
-             --outdir:$BINOUT -o:$EXE \
-             --path:$NIMBLE_DIR $FILENIM
+             --outdir:$BINOUT -o:$EXE $FILENIM
 
 
             if [ -f $EXE ]
@@ -190,7 +202,7 @@ else
 
             "
                 mv $EXE out.wasm
-                wasm3 out.wasm
+                ./runtimes/wasm3 out.wasm
             else
                 echo Build error
             fi
@@ -207,8 +219,7 @@ else
              --cpu:wasm32 -d:emscripten \
              -d:def_WASM_cpp -d:def_32_cpp  \
              --passC:-m32 --passL:-m32 \
-            --outdir:$BINOUT -o:$EXE \
-             --path:$NIMBLE_DIR $FILENIM
+            --outdir:$BINOUT -o:$EXE $FILENIM
 
             if [ -f $EXE ]
             then
