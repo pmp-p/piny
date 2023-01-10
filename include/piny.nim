@@ -7,8 +7,19 @@ import std/enumerate
 import std/macros
 
 
-var ctx : seq[int]
 
+type
+    ContextRef = ref object
+        oid : int
+        started : int
+        remaining : int
+        ticker : int
+        callpath : seq[int]
+
+var
+    ctx : ContextRef
+
+new(ctx)
 
 
 const def_64_cpp = defined(def_64_cpp)
@@ -17,22 +28,6 @@ const def_32_cpp = defined(def_32_cpp)
 # include prelude
 # https://github.com/achesak/nim-pythonfile
 
-
-
-
-# decimal: https://juancarlospaco.github.io/cpython/decimal
-
-when defined(emscripten) or defined(wasi):
-    echo "dynlib not available at all on WebAssembly"
-else:
-    when not defined(def_NODYNLIB_cpp):
-        echo "dynlib turned off explicitely"
-        # stdlib: https://github.com/juancarlospaco/cpython
-        # nimble install cpython
-        # nimble install https://github.com/juancarlospaco/cpython.git
-
-        import dynlib
-        import cpython/decimal
 
 
 # nimpy: https://github.com/yglukhov/nimpy
@@ -94,23 +89,6 @@ proc genProc(define, body: NimNode): NimNode =
 macro def*(args, body: untyped): untyped =
   result = genProc(args, body)
 
-echo ""
-echo f"64 Bits : {def_64_cpp}  32 Bits: {def_32_cpp} WASI:{defined(wasi)}"
-echo ""
-
-when defined(reactor):
-    proc nimMain {.importC: "NimMain", nodecl.}
-
-when defined(wasi):
-
-    proc flockfile(file:cint):cint {.exportC} =
-        0
-
-    proc funlockfile(file:cint):cint {.exportC} =
-        0
-
-    proc setjmp(jmp_buf:cint):cint {.exportC} =
-        0
 
 
 macro c_label*(labelName, body: untyped): untyped =
@@ -133,6 +111,40 @@ template c_jmp*(labelName: untyped): untyped =
 
 
 
+echo " ------- toplevel: Begin -------- "
+echo f"64 Bits : {def_64_cpp}  32 Bits: {def_32_cpp} WASI:{defined(wasi)}"
+echo ""
+
+
+when defined(reactor):
+    proc nimMain {.importC: "NimMain", nodecl.}
+
+
+when defined(emscripten) or defined(wasi):
+    echo "dynlib not available at all on WebAssembly"
+
+    when defined(wasi):
+
+        proc flockfile(file:cint):cint {.exportC} =
+            0
+
+        proc funlockfile(file:cint):cint {.exportC} =
+            0
+
+        proc setjmp(jmp_buf:cint):cint {.exportC} =
+            0
+
+else:
+    when not defined(def_NODYNLIB_cpp):
+        echo "dynlib turned off explicitely"
+        # stdlib: https://github.com/juancarlospaco/cpython
+        # nimble install cpython
+        # nimble install https://github.com/juancarlospaco/cpython.git
+
+        import dynlib
+
+        # decimal: https://juancarlospaco.github.io/cpython/decimal
+        import cpython/decimal
 
 
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-ROOT=$(pwd)
+ROOT=$(realpath $(pwd))
 SDKROOT=$(realpath $(dirname $0))
 . $SDKROOT/config
 
@@ -39,9 +39,14 @@ then
     mkdir -p $ROOT/bin $ROOT/state $ROOT/cache $ROOT/pkg $BINOUT
 
     # cannot ln on cross dev
-    cp -rf $SDKROOT/* ./
+    if [ $SDKROOT = $ROOT ]
+    then
+        echo "Using source folder $ROOT as SDKROOT"
+    else
+        cp -rf $SDKROOT/* ./
+    fi
 
-    COMPILERS="nimjs nimwasi nimemsdk nim32 nim64"
+    COMPILERS="nimjs nimwasi nimweb nimemsdk nim32 nim64"
     rm $COMPILERS
 
     for lnk in $COMPILERS
@@ -178,6 +183,7 @@ else
 
 
     case $FLAVOUR in
+
         nimwasi)
             # switch clang
             export PATH=$SDKROOT/bin/wasi:$PATH
@@ -209,6 +215,42 @@ else
 
         ;;
 
+        nimweb)
+            # switch clang
+            export PATH=$SDKROOT/bin/wasi:$PATH
+
+            summary wasi via wasi-sdk with web reactor
+            [ -f out.wasm ] && rm out.wasm
+
+            # tell clang to change startup to reactor
+            export NIM_NOMAIN=true
+
+            nim c --gc:none -d:release $MAIN \
+             $NIM_OPTS \
+             --cc:clang --cpu:wasm32 --os:linux \
+             -d:emscripten -d:wasi -d:reactor \
+             -d:def_WASM_cpp -d:def_32_cpp  \
+             --passC:"-m32 -I$ROOT/bin/wasi" --passL:-m32 \
+             --outdir:$BINOUT -o:$EXE $FILENIM
+
+
+            if [ -f $EXE ]
+            then
+                echo "
+        moving program $EXE to out.wasm and running via wasm3
+    _______________________________________________________________
+
+            "
+                mv $EXE out.wasm
+                ./runtimes/wasm3.reactor out.wasm
+            else
+                echo Build error
+            fi
+
+        ;;
+
+
+
         nimemsdk)
             # switch clang
             export PATH=${ROOT}/bin/emsdk:$PATH
@@ -230,6 +272,7 @@ else
                 echo build error
             fi
         ;;
+
 
         *)
             summary "native 32/64"

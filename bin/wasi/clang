@@ -39,7 +39,7 @@ then
         ******* adding reactor support *********
 
 "
-#    CC="$CC -Wl,--no-entry -mexec-model=reactor"
+    CC="$CC -Wl,--no-entry -mexec-model=reactor"
 fi
 
 # compat layer from wasi-sdk
