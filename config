@@ -1,5 +1,5 @@
-WASI_VERSION=wasi-sdk-17.0
-WASI_URL=https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-17/wasi-sdk-17.0-linux.tar.gz
+WASI_VERSION=wasi-sdk-19.0
+WASI_URL=https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-19/wasi-sdk-19.0-linux.tar.gz
 
 
 

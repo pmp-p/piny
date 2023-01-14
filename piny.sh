@@ -116,21 +116,23 @@ else
 
     # useless ?
     NIM_OPTS="-d:NIM_INTBITS=32"
+    # --define:useRealtimeGC  ?
 
 
     export NIMBLE_DIR=$ROOT/pkg
 
 
     NIM_OPTS="--path:$NIMBLE_DIR --path:$ROOT/include --nimcache:$ROOT/cache/$FLAVOUR"
-    NIM_OPTS="$NIM_OPTS --cc:clang --os:linux"
+    NIM_OPTS="$NIM_OPTS --cc:clang --os:linux --colors:on"
 
     # gc arc / orc / none ?
     NIM_OPTS="$NIM_OPTS --exceptions:goto --usenimcache --opt:size --threads:off"
-
+    NIM_OPTS="$NIM_OPTS --mm:orc --define:noSignalHandler"
 
     if [ -f dev ]
     then
         echo "DEBUG MODE"
+        # --embedsrc:on
         NIM_OPTS="$NIM_OPTS -d:debug --checks:on --assertions:on"
     else
         # with  --checks:off int overflows are not detected
@@ -190,13 +192,13 @@ else
 
             summary wasi via wasi-sdk
             [ -f out.wasm ] && rm out.wasm
-            #
-            nim c --gc:none -d:release $MAIN \
+            #  --cincludes:$ROOT/bin/wasi
+            nim c -d:release $MAIN \
              $NIM_OPTS \
              --cc:clang --cpu:wasm32 --os:linux \
              -d:emscripten -d:wasi \
              -d:def_WASM_cpp -d:def_32_cpp  \
-             --passC:"-m32 -I$ROOT/bin/wasi" --passL:-m32 \
+             --passC:"-m32" --passL:-m32 \
              --outdir:$BINOUT -o:$EXE $FILENIM
 
 
@@ -225,12 +227,12 @@ else
             # tell clang to change startup to reactor
             export NIM_NOMAIN=true
 
-            nim c --gc:none -d:release $MAIN \
+            nim c -d:release $MAIN \
              $NIM_OPTS \
              --cc:clang --cpu:wasm32 --os:linux \
              -d:emscripten -d:wasi -d:reactor \
              -d:def_WASM_cpp -d:def_32_cpp  \
-             --passC:"-m32 -I$ROOT/bin/wasi" --passL:-m32 \
+             --passC:"-m32" --passL:-m32 \
              --outdir:$BINOUT -o:$EXE $FILENIM
 
 

@@ -32,13 +32,13 @@ iterator a1(ticker: int) {.closure.} =
     echo fmt"a1: C {ctx.ticker=} {ctx.oid=}"
     yield
     echo fmt"a1: D {ctx.ticker=} {ctx.oid=}"
-    yield
+    #yield
 
 iterator a2(ticker: int) {.closure.} =
     echo fmt"a2: A2 {ctx.ticker=} {ctx.oid=}"
     yield
     echo fmt"a2: B2 {ctx.ticker=} {ctx.oid=}"
-    yield
+    #yield
 
 
 
@@ -92,17 +92,16 @@ when defined(wasi):
 
     proc NimMain {.importC: "NimMain"}
 
-
-
     when defined(reactor):
-
 
         proc def_start(): void {.exportc:"_start".} =
             echo "WASI-reactor _start"
             once: NimMain()
             setup()
-            # now the polyfill will bind requestAnimationFrame to loop()
-            # https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame
+            echo """
+            Now please bind requestAnimationFrame to loop()
+            https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame
+            """
 
     else:
         proc main(argc: cint, argv: ptr UncheckedArray[cstring]): cint {.exportC:"main".} =

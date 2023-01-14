@@ -51,7 +51,7 @@ for arg do
 
     arg_is_bad=false
 
-    for badarg in "-ldl" "-Wl,--eh-frame-hdr" "-Wl,-znoexecstack" "-Wl,-znow" "-Wl,-zrelro" "-Wl,-zrelro,-znow"
+    for badarg in "-ldl" "-lpthread" "-Wl,--eh-frame-hdr" "-Wl,-znoexecstack" "-Wl,-znow" "-Wl,-zrelro" "-Wl,-zrelro,-znow"
     do
         if [ "$arg" = "$badarg" ]
         then
