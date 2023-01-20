@@ -18,19 +18,24 @@ else
     tar xvfz ${WASI_VERSION}*-linux.tar.gz
 fi
 
-#echo WASI_SDK_PATH=$WASI_SDK_PATH
+if echo $0|grep ++$
+then
+    export COMPILER="${WASI_SDK_PATH}/bin/clang++"
+else
+    export COMPILER="${WASI_SDK_PATH}/bin/clang"
+fi
 
-export CC="${WASI_SDK_PATH}/bin/clang --sysroot=${WASI_SDK_PATH}/share/wasi-sysroot"
+COMPILER="$COMPILER --sysroot=${WASI_SDK_PATH}/share/wasi-sysroot"
 
 # -Wl,--no-entry -mexec-model=reactor
 # https://github.com/WebAssembly/wasi-sdk/issues/110
 # https://github.com/WebAssembly/WASI/issues/13
 
 
-CC="$CC -O0 -g3 -Wno-unused-command-line-argument"
+COMPILER="$COMPILER -O0 -g3 -Wno-unused-command-line-argument -fno-fast-math -Wno-unsupported-floating-point-opt -fno-exceptions"
 
 # wasm exports
-CC="$CC -Wl,--export-all"
+COMPILER="$COMPILER -Wl,--export-all"
 # web model compat ( wasm ctor not in _start/main but _initilalize instead )
 if ${NIM_NOMAIN:-false}
 then
@@ -39,11 +44,11 @@ then
         ******* adding reactor support *********
 
 "
-    CC="$CC -Wl,--no-entry -mexec-model=reactor"
+    COMPILER="$COMPILER -Wl,--no-entry -mexec-model=reactor"
 fi
 
 # compat layer from wasi-sdk
-export CC="$CC -D_WASI_EMULATED_MMAN -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_PROCESS_CLOCKS"
+export COMPILER="$COMPILER -D_WASI_EMULATED_MMAN -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_PROCESS_CLOCKS -D_WASI_EMULATED_GETPID"
 
 
 for arg do
@@ -51,7 +56,7 @@ for arg do
 
     arg_is_bad=false
 
-    for badarg in "-ldl" "-lpthread" "-Wl,--eh-frame-hdr" "-Wl,-znoexecstack" "-Wl,-znow" "-Wl,-zrelro" "-Wl,-zrelro,-znow"
+    for badarg in "-ldl" "-pthread" "-lpthread" "-Wl,--eh-frame-hdr" "-Wl,-znoexecstack" "-Wl,-znow" "-Wl,-zrelro" "-Wl,-zrelro,-znow"
     do
         if [ "$arg" = "$badarg" ]
         then
@@ -63,12 +68,25 @@ for arg do
     set -- "$@" "$arg"
 done
 
+LINKING=false
 
 if echo "$@" | grep -q ' -l'
 then
-    cmd="$CC -v $@ -lwasi-emulated-mman -lwasi-emulated-signal -lwasi-emulated-process-clocks"
+    LINKING=true
 else
-    cmd="$CC $@"
+    if echo "$@ " | grep -q "\.a "
+    then
+        LINKING=true
+    fi
 fi
-echo $cmd >> $CC_REPLAY
+
+if $LINKING
+then
+    cmd="$COMPILER -v $@ -lwasi-emulated-getpid -lwasi-emulated-mman -lwasi-emulated-signal -lwasi-emulated-process-clocks"
+else
+    cmd="$COMPILER $@"
+fi
+
+echo $cmd > $COMPILER_REPLAY
+
 $cmd

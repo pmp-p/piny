@@ -10,5 +10,5 @@ NIM_VERSION=Nim
 NIM_URL=git
 
 
-CC_REPLAY=${CC_REPLAY:-$(pwd)/state/cc.replay}
+COMPILER_REPLAY=${COMPILER_REPLAY:-$(pwd)/state/cc.replay}
 

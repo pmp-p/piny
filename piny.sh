@@ -17,7 +17,7 @@ NIMROOT=$ROOT/$NIM_VERSION
 #       => OK
 
 reset
-export CC_REPLAY
+export COMPILER_REPLAY
 
 function summary () {
 
@@ -28,7 +28,7 @@ function summary () {
     which clang
     which nim
     which nimble
-    echo "CC_REPLAY=$CC_REPLAY"
+    echo "COMPILER_REPLAY=$COMPILER_REPLAY"
     echo "____________________________________________________"
 
 }
@@ -45,6 +45,8 @@ then
     else
         cp -rf $SDKROOT/* ./
     fi
+
+    ln -f $ROOT/bin/wasi/clang $ROOT/bin/wasi/clang++
 
     COMPILERS="nimjs nimwasi nimweb nimemsdk nim32 nim64"
     rm $COMPILERS
@@ -96,7 +98,7 @@ else
 
     # TODO erase obj cache when changing arch
 
-    truncate --size=0 $CC_REPLAY
+    truncate --size=0 $COMPILER_REPLAY
 
     if echo $0|grep -q 64$
     then
