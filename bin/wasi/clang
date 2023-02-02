@@ -32,11 +32,12 @@ COMPILER="$COMPILER --sysroot=${WASI_SDK_PATH}/share/wasi-sysroot"
 # https://github.com/WebAssembly/WASI/issues/13
 
 
-COMPILER="$COMPILER -O0 -g3 -Wno-unused-command-line-argument -fno-fast-math -Wno-unsupported-floating-point-opt -fno-exceptions"
+# -fno-fast-math -Wno-unsupported-floating-point-opt -fno-exceptions
+COMPILER="$COMPILER -O0 -g3 -Wno-unused-command-line-argument"
 
 # wasm exports
 COMPILER="$COMPILER -Wl,--export-all"
-# web model compat ( wasm ctor not in _start/main but _initilalize instead )
+# web model compat ( wasm ctor not in _start/main but _initialize instead )
 if ${NIM_NOMAIN:-false}
 then
     echo "
@@ -64,8 +65,12 @@ for arg do
             break
         fi
     done
-
-    set -- "$@" "$arg"
+    if $arg_is_bad
+    then
+        echo -n
+    else
+        set -- "$@" "$arg"
+    fi
 done
 
 LINKING=false

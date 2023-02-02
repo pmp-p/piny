@@ -2,6 +2,6 @@
 export PYBUILD=3.11
 . /opt/python-wasm-sdk/wasm32-mvp-emscripten-shell.sh
 echo "
-$@" >> $CC_REPLAY
+$@" >> $COMPILER_REPLAY
 PATH=/opt/python-wasm-sdk/emsdk/upstream/emscripten:$PATH emcc $@
 

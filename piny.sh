@@ -175,8 +175,9 @@ else
 
     if ${NIM_NOMAIN:-true}
     then
-        MAIN="--noMain:on"
+        MAIN="--noMain:off"
     else
+        MAIN="--noMain:on"
         echo "
          *** Not adding reactor support ***
         "
@@ -200,7 +201,6 @@ else
              --cc:clang --cpu:wasm32 --os:linux \
              -d:emscripten -d:wasi \
              -d:def_WASM_cpp -d:def_32_cpp  \
-             --passC:"-m32" --passL:-m32 \
              --outdir:$BINOUT -o:$EXE $FILENIM
 
 
@@ -288,7 +288,8 @@ else
                 ARCH=""
             fi
             echo "_____________________________________________________"
-            nim r $NIM_OPTS $ARCH \
+        #  --backend:cpp
+            nim r $NIM_OPTS $ARCH --cincludes:/opt/python-wasm-sdk/devices/x86_64/usr/include/panda3d \
              --outdir:$BINOUT -o:$EXE \
              -d:def_NODYNLIB_cpp -d:def_${BITS}_cpp $FILENIM
 
